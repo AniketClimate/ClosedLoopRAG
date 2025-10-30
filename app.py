@@ -61,7 +61,17 @@ if uploaded_files:
     else:
         embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-    vectordb = Chroma.from_documents(docs, embedding=embeddings, persist_directory=None)
+    import uuid
+
+collection_name = f"doc-search-{uuid.uuid4()}"
+
+vectordb = Chroma.from_documents(
+    docs, 
+    embedding=embeddings, 
+    collection_name=collection_name,
+    persist_directory=None  # or remove this param if you want
+)
+
 
     llm_backend = st.radio("LLM backend", ["OpenAI GPT-3.5/4", "No LLM - just show chunks"])
     if llm_backend == "OpenAI GPT-3.5/4":
