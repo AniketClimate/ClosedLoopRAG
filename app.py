@@ -66,7 +66,7 @@ if uploaded_files:
 
     if embeddings is not None:
         # IMPORTANT: Create fresh chromadb client with no persistence
-        client = chromadb.Client(Settings(persist_directory=None))
+        client = chromadb.Client(Settings())
 
         # Create vector store from docs, embedding, using fresh client with in-memory DB only
         vectordb = Chroma.from_documents(docs, embedding=embeddings, client=client)
