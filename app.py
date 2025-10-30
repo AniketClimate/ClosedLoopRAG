@@ -1,13 +1,14 @@
 import streamlit as st
 import os
-import uuid
+from PyPDF2 import PdfReader
+from docx import Document as DocxDocument
+import chromadb
+from chromadb.config import Settings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings, HuggingFaceEmbeddings
 from langchain.vectorstores import Chroma
 from langchain.llms import OpenAI
 from langchain.chains import RetrievalQA
-from PyPDF2 import PdfReader
-from docx import Document as DocxDocument
 
 st.set_page_config(page_title="Closed-Loop RAG", layout="centered")
 
@@ -16,7 +17,7 @@ st.markdown(
     "Upload documents and get AI answers strictly based on those documents. No external search."
 )
 
-# Text extraction function
+
 def extract_text(uploaded_file):
     text = ""
     if uploaded_file.name.endswith("pdf"):
@@ -48,7 +49,6 @@ if uploaded_files:
 
     st.success(f"✅ Uploaded {len(uploaded_files)} document(s) with {len(all_text):,} characters.")
 
-    # Chunking params
     chunk_size = st.slider("Chunk size (characters)", min_value=300, max_value=2000, value=1000, step=100)
     chunk_overlap = st.slider("Chunk overlap (characters)", min_value=0, max_value=500, value=200, step=50)
 
@@ -56,7 +56,6 @@ if uploaded_files:
     docs = text_splitter.create_documents([all_text], metadatas=metadatas)
     st.write(f"Split into {len(docs)} chunks.")
 
-    # Embedding Model selection
     embedder = st.radio("Embedding Model:", options=["OpenAI", "all-MiniLM-L6-v2"])
 
     if embedder == "OpenAI":
@@ -66,12 +65,12 @@ if uploaded_files:
         embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
     if embeddings is not None:
-        # Use unique collection name each run to avoid conflicts
-        collection_name = f"collection-{uuid.uuid4()}"
-        vectordb = Chroma.from_documents(docs, embedding=embeddings,collection_name=collection_name)
+        # IMPORTANT: Create fresh chromadb client with no persistence
+        client = chromadb.Client(Settings(persist_directory=None))
 
+        # Create vector store from docs, embedding, using fresh client with in-memory DB only
+        vectordb = Chroma.from_documents(docs, embedding=embeddings, client=client)
 
-        # LLM Backend choice
         llm_backend = st.radio("LLM Backend:", options=["OpenAI GPT-3.5/4", "Show Relevant Chunks Only"])
 
         if llm_backend == "OpenAI GPT-3.5/4":
@@ -89,14 +88,14 @@ if uploaded_files:
                 question = st.text_area("Ask your question about the uploaded documents:")
                 if st.button("Get Answer", disabled=not question):
                     with st.spinner("Retrieving answer..."):
-                        result = qa.run(question)
+                        result = qa(question)
                         st.subheader("Answer")
                         st.write(result)
 
             else:
                 st.warning("Enter OpenAI API key for LLM to generate answer.")
 
-        else:  # Show chunks only
+        else:
             question = st.text_area("Ask your question to retrieve chunks:")
             if st.button("Get Relevant Chunks", disabled=not question):
                 with st.spinner("Searching relevant chunks..."):
