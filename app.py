@@ -68,7 +68,7 @@ if uploaded_files:
     if embeddings is not None:
         # Use unique collection name each run to avoid conflicts
         collection_name = f"collection-{uuid.uuid4()}"
-        vectordb = Chroma.from_documents(docs, embedding=embeddings)
+        vectordb = Chroma.from_documents(docs, embedding=embeddings,collection_name=collection_name)
 
 
         # LLM Backend choice
