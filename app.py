@@ -68,7 +68,8 @@ if uploaded_files:
     if embeddings is not None:
         # Use unique collection name each run to avoid conflicts
         collection_name = f"collection-{uuid.uuid4()}"
-        vectordb = Chroma.from_documents(docs, embedding=embeddings, collection_name=collection_name)
+        vectordb = Chroma.from_documents(docs,embedding=embeddings,persist_directory=None,collection_name=None)
+
 
         # LLM Backend choice
         llm_backend = st.radio("LLM Backend:", options=["OpenAI GPT-3.5/4", "Show Relevant Chunks Only"])
