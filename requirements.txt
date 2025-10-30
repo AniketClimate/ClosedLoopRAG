@@ -3,5 +3,6 @@ openai
 PyPDF2
 python-docx
 langchain==0.0.350
+langchain_community
 sentence-transformers
 chromadb
